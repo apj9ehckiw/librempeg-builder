@@ -46,16 +46,23 @@ jobs:
             --enable-protocol=file \
             --enable-filter=scale,format,aformat,null \
             --enable-libx264 \
+            --enable-ffmpeg \
+            --enable-ffprobe \
             --arch=x86_64 \
-            --target-os=mingw32
+            --target-os=mingw32 \
+            --extra-cflags="-O2"
             
+          echo "=== configure programs ==="
+          grep -E "ffmpeg .* (yes|no)|ffprobe .* (yes|no)" config.h config.mak 2>/dev/null || true
+          
           make -j$(nproc)
           make install
           
           echo "=== output/bin contents ==="
           ls -la output/bin/
+          file output/bin/ffmpeg.exe 2>/dev/null || true
           
-      - name: Upload artifacts  
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: librempeg-win64
