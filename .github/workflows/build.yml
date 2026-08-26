@@ -1,8 +1,5 @@
 name: Build librempeg Windows
-
-on:
-  workflow_dispatch:
-
+on: workflow_dispatch
 jobs:
   build:
     runs-on: windows-latest
@@ -20,22 +17,20 @@ jobs:
             mingw-w64-x86_64-nasm
             mingw-w64-x86_64-pkg-config
             git
-
       - name: Checkout and Build
         shell: msys2 {0}
         run: |
           git clone --depth 1 https://github.com/librempeg/librempeg.git
           cd librempeg
-          
           git clone --depth 1 https://code.videolan.org/videolan/x264.git
           cd x264
           ./configure --prefix=/mingw64 --enable-static --disable-cli --disable-opencl
           make -j$(nproc) && make install
           cd ..
-          
           ./configure \
             --prefix=./output \
             --enable-gpl \
+            --enable-agpl \
             --disable-debug \
             --disable-doc \
             --disable-autodetect \
@@ -46,22 +41,11 @@ jobs:
             --enable-protocol=file \
             --enable-filter=scale,format,aformat,null \
             --enable-libx264 \
-            --enable-ffmpeg \
-            --enable-ffprobe \
             --arch=x86_64 \
-            --target-os=mingw32 \
-            --extra-cflags="-O2"
-            
-          echo "=== configure programs ==="
-          grep -E "ffmpeg .* (yes|no)|ffprobe .* (yes|no)" config.h config.mak 2>/dev/null || true
-          
+            --target-os=mingw32
           make -j$(nproc)
           make install
-          
-          echo "=== output/bin contents ==="
           ls -la output/bin/
-          file output/bin/ffmpeg.exe 2>/dev/null || true
-          
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
