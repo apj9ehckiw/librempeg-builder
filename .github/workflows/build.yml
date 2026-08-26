@@ -21,47 +21,42 @@ jobs:
             mingw-w64-x86_64-pkg-config
             git
 
-      - name: Checkout librempeg
+      - name: Checkout and Build
         shell: msys2 {0}
         run: |
           git clone --depth 1 https://github.com/librempeg/librempeg.git
           cd librempeg
-
-      - name: Build (static, minimal with bvc2/vvc/hevc + x264)
-        shell: msys2 {0}
-        run: |
-          cd librempeg
           
-          # Install x264 for encoding
           git clone --depth 1 https://code.videolan.org/videolan/x264.git
-          cd x264 && ./configure --prefix=/mingw64 --enable-static --disable-cli && make -j4 && make install && cd ..
+          cd x264
+          ./configure --prefix=/mingw64 --enable-static --disable-cli --disable-opencl
+          make -j$(nproc) && make install
+          cd ..
           
           ./configure \
             --prefix=./output \
             --enable-gpl \
             --disable-debug \
             --disable-doc \
-            --disable-ffplay \
-            --disable-network \
             --disable-autodetect \
             --enable-decoder=bvc2,vvc,hevc,aac \
             --enable-demuxer=mov \
             --enable-encoder=libx264,aac \
             --enable-muxer=mp4 \
             --enable-protocol=file \
-            --enable-filter=scale,format,aformat \
+            --enable-filter=scale,format,aformat,null \
             --enable-libx264 \
-            --extra-libs="-lstdc++" \
             --arch=x86_64 \
             --target-os=mingw32
             
           make -j$(nproc)
           make install
           
-      - name: Upload ffmpeg.exe
+          echo "=== output/bin contents ==="
+          ls -la output/bin/
+          
+      - name: Upload artifacts  
         uses: actions/upload-artifact@v4
         with:
           name: librempeg-win64
-          path: |
-            librempeg/output/bin/ffmpeg.exe
-            librempeg/output/bin/ffprobe.exe
+          path: librempeg/output/bin/
